@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>직원별 합계 목록</title>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f6fa; margin: 0; padding: 2rem; }
+    h1 { color: #1a73e8; }
+    .staff-list { display: flex; flex-wrap: wrap; gap: 2rem; margin-top: 2rem; }
+    .staff-card { background: white; border-radius: 10px; box-shadow: 0 2px 8px #e0e4ea55; padding: 2rem 2.5rem; min-width: 220px; cursor: pointer; transition: box-shadow 0.2s; }
+    .staff-card:hover { box-shadow: 0 4px 16px #1a73e833; }
+    .staff-name { font-size: 1.2rem; font-weight: 700; color: #1a73e8; }
+    .staff-email { font-size: 0.95rem; color: #555; margin-bottom: 0.7rem; }
+    .staff-role { font-size: 0.9rem; color: #888; }
+    .logout-btn { background: #e84545; color: white; border: none; border-radius: 6px; padding: 0.4rem 1.2rem; font-weight: 600; cursor: pointer; float: right; }
+    .topbar { display: flex; justify-content: space-between; align-items: center; }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <h1>직원별 합계 목록</h1>
+    <button class="logout-btn" onclick="location.href='/logout'">로그아웃</button>
+  </div>
+  <div class="staff-list" id="staffList"></div>
+  <script>
+    async function fetchStaffList() {
+      const res = await fetch('/api/admin/staff_summary');
+      const data = await res.json();
+      const list = document.getElementById('staffList');
+      list.innerHTML = '';
+      data.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'staff-card';
+        card.onclick = () => location.href = `/admin/staff_detail/${item.email}`;
+        card.innerHTML = `
+          <div class="staff-name">${item.name}</div>
+          <div class="staff-email">${item.email}</div>
+          <div class="staff-role">월 실지급액: <b>${item.month_final_pay.toLocaleString()}원</b></div>
+          <div class="staff-role">누적 실지급액: <b>${item.total_final_pay.toLocaleString()}원</b></div>
+        `;
+        list.appendChild(card);
+      });
+    }
+    fetchStaffList();
+  </script>
+</body>
+</html>

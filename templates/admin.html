@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>관리자 - 직원 근무/급여 관리</title>
+  <style>
+  :root {
+    --main: #1a73e8;
+    --bg: #f5f6fa;
+    --card: #ffffff;
+    --border: #e0e4ea;
+    --text: #222;
+    --subtext: #888;
+    --radius: 14px;
+    --shadow: 0 2px 12px #0001;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    font-size: 16px;
+    font-family: 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+    background-color: var(--bg);
+    min-height: 100vh;
+  }
+
+  .container {
+    max-width: 1000px;
+    margin: auto;
+    padding: 1.5rem 1rem;
+  }
+
+  .header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg);
+    padding: 1rem 0;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  h1 {
+    font-size: 1.4rem;
+    color: var(--main);
+    font-weight: 700;
+    margin: 0;
+  }
+
+  .logout-btn {
+    background: #e84545;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 0.6rem 1.2rem;
+    font-size: 1rem;
+    cursor: pointer;
+  }
+
+  .filter-row {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    margin-top: 1.2rem;
+    flex-wrap: wrap;
+  }
+
+  select, button {
+    padding: 0.4rem 0.8rem;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    font-size: 1rem;
+  }
+
+  .blue-btn {
+    background: var(--main);
+    color: white;
+    border: none;
+    font-weight: 600;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1.5rem;
+    background: white;
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+    word-break: break-word;
+  }
+
+  th, td {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.95rem;
+  }
+
+  th {
+    background: #f0f2f5;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  td button {
+    padding: 0.3rem 0.9rem;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+  }
+
+  .approve { background: #1abc9c; color: white; }
+  .reject { background: #e74c3c; color: white; }
+  .disabled { background: #ccc !important; color: #666 !important; cursor: not-allowed; }
+
+  @media print {
+    .logout-btn, .approve, .reject, .blue-btn { display: none; }
+  }
+
+  /* ✅ 모바일 최적화 */
+  @media (max-width: 768px) {
+    html { font-size: 15px; }
+
+    .container {
+      padding: 1rem 0.5rem;
+    }
+
+    .header-row {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .filter-row {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.6rem;
+    }
+
+    .filter-row label {
+      font-weight: 600;
+    }
+
+    table {
+      font-size: 0.9rem;
+    }
+
+    th, td {
+      padding: 0.6rem 0.7rem;
+    }
+
+    .logout-btn, .blue-btn {
+      width: 100%;
+    }
+
+    td button {
+      padding: 0.4rem 0.7rem;
+      font-size: 0.85rem;
+    }
+  }
+</style>
+</head>
+<body>
+  <div class="container">
+    <div class="header-row">
+      <h1>관리자 - 직원 근무/급여 관리</h1>
+      <button class="logout-btn" onclick="location.href='/logout'">로그아웃</button>
+    </div>
+
+    <div class="filter-row">
+      <label for="staffYear">연도</label>
+      <select id="staffYear"></select>
+      <label for="staffMonth">월</label>
+      <select id="staffMonth"></select>
+      <button id="staffSummaryBtn" class="blue-btn">직원별 합계 조회</button>
+    </div>
+
+    <table id="staffSummaryTable" style="display:none;">
+      <thead>
+        <tr>
+          <th>직원명</th>
+          <th>이메일</th>
+          <th>월 근무시간</th>
+          <th>월 실지급액</th>
+          <th>누적 근무시간</th>
+          <th>누적 실지급액</th>
+          <th>급여명세서</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <table id="pendingTable">
+      <thead>
+        <tr>
+          <th>직원명</th>
+          <th>날짜</th>
+          <th>출근</th>
+          <th>퇴근</th>
+          <th>총 근무시간</th>
+          <th>상태</th>
+          <th>승인</th>
+          <th>거절</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <script>
+    function fillStaffYearMonth() {
+      const now = new Date();
+      const yearSel = document.getElementById('staffYear');
+      const monthSel = document.getElementById('staffMonth');
+      yearSel.innerHTML = '';
+      monthSel.innerHTML = '';
+      const thisYear = now.getFullYear();
+      for (let y = thisYear - 3; y <= thisYear + 1; y++) {
+        yearSel.innerHTML += `<option value="${y}">${y}년</option>`;
+      }
+      for (let m = 1; m <= 12; m++) {
+        monthSel.innerHTML += `<option value="${m}">${m}월</option>`;
+      }
+      yearSel.value = thisYear;
+      monthSel.value = now.getMonth() + 1;
+    }
+
+    async function fetchStaffSummary() {
+      const year = document.getElementById('staffYear').value;
+      const month = document.getElementById('staffMonth').value;
+      const res = await fetch(`/api/admin/staff_summary?year=${year}&month=${month}`);
+      const data = await res.json();
+      const tbody = document.querySelector('#staffSummaryTable tbody');
+      tbody.innerHTML = '';
+      data.forEach(item => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><a href="/admin/staff_detail/${item.user_id}?year=${year}&month=${month}">${item.name}</a></td>
+          <td><a href="mailto:${item.email}">${item.email}</a></td>
+          <td>${item.monthly_hours}시간</td>
+          <td>${item.monthly_final_pay.toLocaleString()}원</td>
+          <td>${item.cumulative_hours}시간</td>
+          <td>${item.cumulative_final_pay.toLocaleString()}원</td>
+          <td><button onclick="printPayslip(${item.user_id}, ${year}, ${month})">급여명세서 출력</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+      document.getElementById('staffSummaryTable').style.display = '';
+    }
+    function printPayslip(user_id, year, month) {
+      location.href = `/admin/payslip/${user_id}?year=${year}&month=${month}`;
+    }
+    document.getElementById('staffSummaryBtn').addEventListener('click', fetchStaffSummary);
+    fillStaffYearMonth();
+
+    async function fetchPending() {
+      const res = await fetch('/api/admin/pending_worklogs');
+      const data = await res.json();
+      const tbody = document.querySelector('#pendingTable tbody');
+      tbody.innerHTML = '';
+      data.forEach(item => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${item.name}</td>
+          <td>${item.work_date}</td>
+          <td>${item.clock_in}</td>
+          <td>${item.clock_out}</td>
+          <td>${item.total_hours}시간</td>
+          <td>${item.status === 0 ? '대기' : item.status === 1 ? '승인' : '거절'}</td>
+          <td><button class="approve" onclick="approve(${item.id})" ${item.status !== 0 ? 'disabled class=\'disabled\'' : ''}>승인</button></td>
+          <td><button class="reject" onclick="reject(${item.id})" ${item.status !== 0 ? 'disabled class=\'disabled\'' : ''}>거절</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+    async function approve(id) {
+      await fetch(`/api/admin/approve_worklog`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      });
+      alert('근무 등록 정상 승인 완료!');
+      fetchPending();
+    }
+    async function reject(id) {
+      await fetch(`/api/admin/reject_worklog`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      });
+      alert('근무 등록 거절 완료');
+      fetchPending();
+    }
+    fetchPending();
+    setInterval(fetchPending, 10000);
+  </script>
+</body>
+</html>

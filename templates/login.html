@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>직원 로그인</title>
+  <style>
+    :root {
+      --main: #1a73e8;
+      --bg: #f5f6fa;
+      --card: #fff;
+      --border: #e0e4ea;
+      --text: #222;
+      --subtext: #888;
+      --radius: 14px;
+      --shadow: 0 2px 12px #0001;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      font-size: 16px;
+      font-family: 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', Arial, sans-serif;
+      background: var(--bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .login-container {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      width: 100%;
+      max-width: 380px;
+      padding: 2.5rem 1.5rem 2.5rem 1.5rem;
+      text-align: center;
+    }
+
+    .login-container h1 {
+      font-size: 1.4rem;
+      margin-bottom: 1.1rem;
+      color: var(--main);
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    .login-container p {
+      color: var(--subtext);
+      margin-bottom: 2rem;
+      font-size: 1.05rem;
+    }
+
+    .google-btn {
+      background: #fff;
+      color: #3c4043;
+      border: 1.5px solid var(--border);
+      padding: 0.75rem 1.3rem;
+      border-radius: 0.7rem;
+      font-size: 1.05rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      cursor: pointer;
+      transition: box-shadow 0.2s;
+      box-shadow: 0 1px 4px #0001;
+      margin-top: 0.7rem;
+      width: 100%;
+      max-width: 260px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .google-btn:hover {
+      box-shadow: 0 2px 8px #0002;
+      border-color: var(--main);
+    }
+
+    .google-icon {
+      width: 22px;
+      height: 22px;
+    }
+
+    @media (max-width: 600px) {
+      html { font-size: 15px; }
+      .login-container {
+        max-width: 95vw;
+        padding: 2rem 1rem;
+      }
+      .google-btn {
+        font-size: 0.98rem;
+        max-width: 95vw;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <h1>고기당 직원 출근 관리</h1>
+    <p>Google 계정으로 로그인해 주세요</p>
+    <a href="{{ url_for('google.login') }}">
+      <div class="google-btn">
+        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="google-icon" alt="Google 아이콘">
+        Google로 로그인
+      </div>
+    </a>
+  </div>
+</body>
+</html>

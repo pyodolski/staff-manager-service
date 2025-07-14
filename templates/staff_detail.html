@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>직원 근무 상세</title>
+  <style>
+    :root {
+      --main: #1a73e8;
+      --bg: #f5f6fa;
+      --card: #fff;
+      --border: #e0e4ea;
+      --text: #222;
+      --subtext: #888;
+      --radius: 14px;
+      --shadow: 0 2px 12px #0001;
+    }
+    html { font-size: 16px; }
+    body {
+      font-family: 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', Arial, sans-serif;
+      background: var(--bg);
+      margin: 0; padding: 0;
+      min-height: 100vh;
+    }
+    .header-container {
+      background: var(--bg);
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.8rem;
+    }
+    .header-actions {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      max-width: 960px;
+    }
+    .back-btn, .logout-btn {
+      background: var(--main); color: #fff; border: none; border-radius: 8px;
+      padding: 0.6rem 1.2rem; font-size: 1rem; font-weight: 600;
+      cursor: pointer;
+      min-width: 90px;
+    }
+    .back-btn { background: #e0e4ea; color: var(--main); border: 1px solid var(--main); }
+    .logout-btn { background: #e84545; color: #fff; border: none; }
+    h1 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--main);
+      text-align: center;
+      margin: 0.5rem 0 1rem;
+    }
+    table {
+      width: 96%;
+      margin: 0 auto 1.5rem;
+      border-collapse: collapse;
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    th, td {
+      padding: 0.8rem 1rem;
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+    }
+    th {
+      background: #f0f2f8;
+      font-weight: 600;
+      color: var(--text);
+    }
+    td button {
+      padding: 0.3rem 0.8rem;
+      border-radius: 6px;
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    td button:first-child { background: #1a73e8; color: white; }
+    td button:last-child { background: #e84545; color: white; }
+    @media (max-width: 600px) {
+      html { font-size: 15px; }
+      .header-actions { flex-direction: column; gap: 0.5rem; align-items: center; }
+      table { width: 98%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header-container">
+    <div class="header-actions">
+      <button class="back-btn" onclick="window.history.back()">← 뒤로가기</button>
+      <button class="logout-btn" onclick="location.href='/logout'">로그아웃</button>
+    </div>
+    <h1 id="staffTitle">직원 근무 상세</h1>
+  </div>
+  <table id="worklogTable">
+    <thead>
+      <tr>
+        <th>날짜</th><th>출근</th><th>퇴근</th><th>총 근무시간</th><th>상태</th><th>수정</th><th>삭제</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+  <div style="width:96%;max-width:700px;margin:0 auto 1.5rem;text-align:right;">
+    <button id="showAddBtn" style="background:#1a73e8;color:#fff;border-radius:8px;padding:0.5rem 1.2rem;font-weight:600;font-size:1rem;border:none;cursor:pointer;margin-bottom:0.7rem;display:block;" onclick="showAddForm()">+ 근무 추가</button>
+    <form id="addForm" style="display:none;background:#fff;border-radius:10px;box-shadow:0 2px 8px #e0e4ea55;padding:1rem 1.5rem;margin-top:0.4rem;display:flex;gap:0.8rem;flex-wrap:wrap;align-items:center;justify-content:center;">
+      <input id="addDate" type="date" style="padding:0.4rem 0.7rem;border-radius:6px;border:1px solid #e0e4ea;" required>
+      <input id="addIn" type="time" style="padding:0.4rem 0.7rem;border-radius:6px;border:1px solid #e0e4ea;" required>
+      <input id="addOut" type="time" style="padding:0.4rem 0.7rem;border-radius:6px;border:1px solid #e0e4ea;" required>
+      <input id="addHours" type="number" step="0.01" min="0" placeholder="총 근무시간" style="width:100px;padding:0.4rem 0.7rem;border-radius:6px;border:1px solid #e0e4ea;" required>
+      <button type="button" onclick="addWorklog()" style="background:#1a73e8;color:#fff;border:none;border-radius:6px;padding:0.4rem 1.1rem;font-weight:600;">저장</button>
+      <button type="button" onclick="hideAddForm()" style="background:#e84545;color:#fff;border:none;border-radius:6px;padding:0.4rem 1.1rem;font-weight:600;">취소</button>
+    </form>
+  </div>
+  <script>
+    // user_id, year, month 파싱
+    const pathParts = window.location.pathname.split('/');
+    const userId = pathParts[pathParts.length-1];
+    const urlParams = new URLSearchParams(window.location.search);
+    let year = urlParams.get('year') || new Date().getFullYear();
+    let month = urlParams.get('month') || (new Date().getMonth()+1);
+
+    // 직원 이름 표시
+    async function fetchStaffName() {
+      const res = await fetch(`/api/admin/staff_info/${userId}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      document.getElementById('staffTitle').innerText = `${data.name} 근무 상세 (${year}년 ${month}월)`;
+    }
+
+    // 근무기록 리스트 로드
+    async function loadWorklogList() {
+      const res = await fetch(`/api/admin/staff_worklog_list/${userId}?year=${year}&month=${month}`);
+      const data = await res.json();
+      const tbody = document.querySelector('#worklogTable tbody');
+      tbody.innerHTML = '';
+      if (!Array.isArray(data) || data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#aaa;">근무기록이 없습니다</td></tr>';
+        return;
+      }
+      data.forEach(log => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${log.work_date}</td>
+          <td><span class="clock-in">${log.clock_in}</span></td>
+          <td><span class="clock-out">${log.clock_out}</span></td>
+          <td><span class="total-hours">${log.total_hours}</span></td>
+          <td>${log.status === 1 ? '승인' : '미승인'}</td>
+          <td><button onclick="editWorklog(${log.id}, this)">수정</button></td>
+          <td><button onclick="deleteWorklog(${log.id})">삭제</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function reloadList() {
+      year = urlParams.get('year') || new Date().getFullYear();
+      month = urlParams.get('month') || (new Date().getMonth()+1);
+      fetchStaffName();
+      loadWorklogList();
+    }
+
+    // 인라인 수정
+    function editWorklog(id, btn) {
+      const tr = btn.closest('tr');
+      // 기존 값 백업
+      const orig = {
+        clock_in: tr.querySelector('.clock-in').innerText,
+        clock_out: tr.querySelector('.clock-out').innerText,
+        total_hours: tr.querySelector('.total-hours').innerText
+      };
+      // 인라인 입력창으로 변경
+      tr.querySelector('.clock-in').innerHTML = `<input type='time' value='${orig.clock_in}'>`;
+      tr.querySelector('.clock-out').innerHTML = `<input type='time' value='${orig.clock_out}'>`;
+      tr.querySelector('.total-hours').innerHTML = `<input type='number' step='0.01' min='0' value='${orig.total_hours}'>`;
+      // 상태 셀도 수정 가능하게
+      const statusTd = tr.children[4];
+      const statusVal = statusTd.innerText === '승인' ? 1 : 0;
+      statusTd.innerHTML = `<select><option value='1' ${statusVal===1?'selected':''}>승인</option><option value='0' ${statusVal===0?'selected':''}>미승인</option></select>`;
+      // 버튼 변경
+      btn.style.display = 'none';
+      const saveBtn = document.createElement('button');
+      saveBtn.innerText = '저장';
+      saveBtn.onclick = async function() {
+        const data = {
+          clock_in: tr.querySelector('.clock-in input').value,
+          clock_out: tr.querySelector('.clock-out input').value,
+          total_hours: tr.querySelector('.total-hours input').value,
+          status: tr.children[4].querySelector('select').value
+        };
+        try {
+          const res = await fetch(`/api/admin/update_worklog/${id}`, {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify(data)
+          });
+          const result = await res.json();
+          if (result.result === 'ok') reloadList();
+          else alert(result.error || '수정 실패');
+        } catch(e) {
+          alert('수정 중 오류 발생');
+        }
+      };
+      const cancelBtn = document.createElement('button');
+      cancelBtn.innerText = '취소';
+      cancelBtn.onclick = function() {
+        tr.querySelector('.clock-in').innerText = orig.clock_in;
+        tr.querySelector('.clock-out').innerText = orig.clock_out;
+        tr.querySelector('.total-hours').innerText = orig.total_hours;
+        statusTd.innerText = statusVal === 1 ? '승인' : '미승인';
+        btn.style.display = '';
+        saveBtn.remove();
+        cancelBtn.remove();
+      };
+      btn.parentNode.appendChild(saveBtn);
+      btn.parentNode.appendChild(cancelBtn);
+    }
+
+    // 삭제
+    async function deleteWorklog(id) {
+      if (!confirm('정말 삭제하시겠습니까?')) return;
+      try {
+        const res = await fetch(`/api/admin/delete_worklog/${id}`, {method: 'DELETE'});
+        const data = await res.json();
+        if (data.result === 'ok') {
+          reloadList();
+        } else {
+          alert(data.error || '삭제 실패');
+        }
+      } catch (e) {
+        alert('삭제 중 오류 발생');
+      }
+    }
+
+    // 추가 폼 표시/숨김/추가
+    function showAddForm() {
+      document.getElementById('addForm').style.display = 'flex';
+      document.getElementById('showAddBtn').style.display = 'none';
+    }
+    function hideAddForm() {
+      document.getElementById('addForm').style.display = 'none';
+      document.getElementById('showAddBtn').style.display = 'block';
+      document.getElementById('addDate').value = '';
+      document.getElementById('addIn').value = '';
+      document.getElementById('addOut').value = '';
+      document.getElementById('addHours').value = '';
+    }
+    async function addWorklog() {
+      const work_date = document.getElementById('addDate').value;
+      const clock_in = document.getElementById('addIn').value;
+      const clock_out = document.getElementById('addOut').value;
+      const total_hours = document.getElementById('addHours').value;
+      if (!work_date || !clock_in || !clock_out || !total_hours) {
+        alert('모든 값을 입력하세요!');
+        return;
+      }
+      try {
+        const res = await fetch(`/api/admin/add_worklog/${userId}`, {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({work_date, clock_in, clock_out, total_hours})
+        });
+        const data = await res.json();
+        if (data.result === 'ok') {
+          hideAddForm();
+          reloadList();
+        } else {
+          alert(data.error || '추가 실패');
+        }
+      } catch (e) {
+        alert('추가 중 오류 발생');
+      }
+    }
+
+    // 최초 로드
+    fetchStaffName();
+    loadWorklogList();
+  </script>
+</body>
+</html>
+s

@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>급여명세서</title>
+  <style>
+    :root {
+      --main: #1a73e8;
+      --bg: #f5f6fa;
+      --card: #fff;
+      --border: #e0e4ea;
+      --text: #222;
+      --subtext: #888;
+      --radius: 14px;
+      --shadow: 0 2px 12px #0001;
+    }
+    html { font-size: 16px; }
+    body {
+      font-family: 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', Arial, sans-serif;
+      background: var(--bg);
+      margin: 0; padding: 0;
+      min-height: 100vh;
+    }
+    .payslip-box {
+      background: var(--card);
+      border-radius: var(--radius);
+      max-width: 430px;
+      margin: 0.8rem auto 0 auto;
+      padding: 1.6rem 1rem 2.5rem 1rem;
+      box-shadow: var(--shadow);
+      box-sizing: border-box;
+    }
+    .header-row {
+      display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;
+    }
+    .back-btn, .print-btn {
+      background: var(--main); color: #fff; border: none; border-radius: 8px;
+      padding: 0.6rem 1.2rem; font-size: 1rem; font-weight: 600;
+      cursor: pointer;
+      min-width: 90px;
+      margin: 0 0.2rem;
+    }
+    .back-btn { background: #e0e4ea; color: var(--main); border: 1px solid var(--main); }
+    h1 { color: var(--main); font-size: 1.45rem; text-align:center; margin: 0.7rem 0 1.1rem 0; letter-spacing:-1px; }
+    .info-list { display: flex; flex-direction: column; gap: 0.2rem; margin-bottom: 1.1rem; }
+    .info-row { display: flex; justify-content: space-between; align-items: center; padding: 0.8rem 0.2rem; border-bottom: 1px solid var(--border); font-size: 1.04rem; }
+    .info-row .label { color: var(--subtext); font-weight: 500; }
+    .info-row .value { color: var(--text); font-weight: 600; }
+    .deduct-title { background: #f0f4fa; border-radius: 6px; padding: 0.5rem 0.7rem; margin: 0.8rem 0 0.2rem 0; color: var(--main); font-weight: 700; font-size: 1.07rem; }
+    @media (max-width: 600px) {
+      .payslip-box { max-width: 99vw; padding: 1.1rem 0.2rem 2rem 0.2rem; }
+      .header-row { flex-direction: column; gap: 0.5rem; }
+      .back-btn, .print-btn { font-size: 0.98rem; min-width: 80px; padding: 0.5rem 1rem; }
+      h1 { font-size: 1.13rem; }
+      .info-row { font-size: 0.98rem; }
+    }
+    @media print { .print-btn, .back-btn { display: none; } body { background: #fff; } }
+  </style>
+</head>
+<body>
+  <div class="payslip-box">
+    <div class="header-row">
+      <button class="back-btn" onclick="window.history.back()">← 뒤로가기</button>
+      <h1>급여명세서</h1>
+      <button class="print-btn" onclick="window.print()">인쇄/저장</button>
+    </div>
+    <div class="info-list">
+      <div class="info-row"><span class="label">이름</span><span class="value" id="name"></span></div>
+      <div class="info-row"><span class="label">이메일</span><span class="value" id="email"></span></div>
+      <div class="info-row"><span class="label">지급 기간</span><span class="value" id="period"></span></div>
+      <div class="info-row"><span class="label">지급일자</span><span class="value" id="payday"></span></div>
+      <div class="info-row"><span class="label">회사명</span><span class="value" id="company">고기당 본점</span></div>
+      <div class="info-row"><span class="label">총 근무시간</span><span class="value" id="total_hours"></span></div>
+      <div class="info-row"><span class="label">시급</span><span class="value" id="hourly_wage"></span></div>
+      <div class="info-row"><span class="label">총 지급액</span><span class="value" id="gross_pay"></span></div>
+      <div class="deduct-title">공제 내역</div>
+      <div class="info-row"><span class="label">소득세(3%)</span><span class="value" id="deduct_tax"></span></div>
+      <div class="info-row"><span class="label">지방세(0.3%)</span><span class="value" id="deduct_local"></span></div>
+      <div class="info-row"><span class="label">공제 합계</span><span class="value" id="deduct_total"></span></div>
+      <div class="info-row" style="font-size:1.13rem; font-weight:700;"><span class="label">실지급액</span><span class="value" id="final_pay"></span></div>
+    </div>
+  </div>
+  <script>
+    // user_id, year, month 파싱
+    const pathParts = window.location.pathname.split('/');
+    const userId = pathParts[pathParts.length-1];
+    const urlParams = new URLSearchParams(window.location.search);
+    const year = urlParams.get('year');
+    const month = urlParams.get('month');
+    async function fetchPayslip() {
+      const res = await fetch(`/api/admin/staff_summary?year=${year}&month=${month}`);
+      const data = await res.json();
+      const staff = data.find(s => s.user_id == userId);
+      if (!staff) {
+        alert('해당 직원의 명세서를 찾을 수 없습니다.');
+        return;
+      }
+      // 시급 및 공제율(소득세/지방세만)
+      const HOURLY_WAGE = staff.hourly_wage || 9700;
+      const gross_pay = staff.monthly_hours * HOURLY_WAGE;
+      const tax = Math.floor(gross_pay * 0.03); // 소득세
+      const local = Math.floor(gross_pay * 0.003); // 지방세
+      const deduct_total = tax + local;
+      const final_pay = gross_pay - deduct_total;
+      // 표 채우기
+      document.getElementById('name').innerText = staff.name;
+      document.getElementById('email').innerText = staff.email;
+      document.getElementById('period').innerText = `${year}년 ${month}월`;
+      document.getElementById('payday').innerText = `${year}-${String(month).padStart(2,'0')}-25`;
+      document.getElementById('company').innerText = '고기당 본점';
+      document.getElementById('total_hours').innerText = staff.monthly_hours + '시간';
+      document.getElementById('hourly_wage').innerText = HOURLY_WAGE.toLocaleString() + '원';
+      document.getElementById('gross_pay').innerText = gross_pay.toLocaleString() + '원';
+      document.getElementById('deduct_tax').innerText = tax.toLocaleString() + '원';
+      document.getElementById('deduct_local').innerText = local.toLocaleString() + '원';
+      document.getElementById('deduct_total').innerText = deduct_total.toLocaleString() + '원';
+      document.getElementById('final_pay').innerText = final_pay.toLocaleString() + '원';
+    }
+    fetchPayslip();
+  </script>
+</body>
+</html>

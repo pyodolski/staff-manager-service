@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>고기당 출근관리</title>
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet" />
+<style>
+  :root {
+    --main: #1a73e8;
+    --danger: #e84545;
+    --gray-bg: #f0f2f5;
+  }
+
+  html {
+    font-size: 16px;
+  }
+
+  body {
+    font-family: 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', Arial, sans-serif;
+    background: var(--gray-bg);
+    margin: 0;
+    padding: 2rem 1rem;
+  }
+
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+  }
+
+  .header {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.8rem;
+    margin-bottom: 1.5rem;
+  }
+
+  h1 {
+    font-size: 1.5rem;
+    color: var(--main);
+    margin: 0;
+    flex: 1 1 100%;
+  }
+
+  .controls {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    flex: 1 1 100%;
+  }
+
+  select,
+  button {
+    font-size: 0.95rem;
+    padding: 0.35rem 0.7rem;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    outline: none;
+  }
+
+  #summaryQueryBtn,
+  #workRegisterBtn {
+    background: var(--main);
+    color: white;
+    border: none;
+    font-weight: 600;
+  }
+
+  .logout-btn {
+    background: var(--danger);
+    color: white;
+    font-weight: 600;
+    border: none;
+  }
+
+  .summary-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+  }
+
+  .summary-box {
+    background: white;
+    padding: 0.7rem 0.8rem;
+    border-radius: 10px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    flex: 1 1 calc(50% - 0.4rem);
+    text-align: center;
+    box-sizing: border-box;
+  }
+
+  .summary-box strong {
+    color: var(--main);
+    display: block;
+    margin-bottom: 0.3rem;
+    font-size: 0.9rem;
+  }
+
+  .summary-box div {
+    font-size: 0.85rem;
+  }
+
+  #calendar-container {
+    background: white;
+    border-radius: 10px;
+    padding: 1rem;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  }
+
+  .modal-bg {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
+
+  .modal-content {
+    background: white;
+    padding: 2rem;
+    border-radius: 10px;
+    width: 100%;
+    max-width: 400px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
+    position: relative;
+  }
+
+  .close-btn {
+    position: absolute;
+    top: 10px;
+    right: 14px;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #888;
+  }
+
+  label {
+    display: block;
+    margin-top: 1rem;
+    font-weight: 600;
+  }
+
+  .modal-content select,
+  .modal-content input[type='date'] {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    margin-top: 0.3rem;
+  }
+
+  .modal-content button {
+    margin-top: 1.5rem;
+    background: var(--main);
+    color: white;
+    width: 100%;
+    border: none;
+    padding: 0.6rem;
+    font-weight: bold;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+
+  @media (max-width: 600px) {
+    .header {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    .summary-container {
+      flex-direction: row;
+      gap: 0.5rem;
+    }
+    .summary-box {
+      flex: 1 1 calc(50% - 0.3rem);
+    }
+    h1 {
+      font-size: 1.3rem;
+    }
+    select,
+    button {
+      font-size: 0.85rem;
+      padding: 0.3rem 0.6rem;
+    }
+    .summary-box strong {
+      font-size: 0.85rem;
+    }
+    .summary-box div {
+      font-size: 0.8rem;
+    }
+  }
+</style>
+
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>고기당 출근 관리</h1>
+      <div class="controls">
+        <select id="selectYear"></select>
+        <select id="selectMonth"></select>
+        <button id="summaryQueryBtn">조회</button>
+        <button id="workRegisterBtn">근무 등록</button>
+        <button class="logout-btn" onclick="location.href='/logout'">로그아웃</button>
+      </div>
+    </div>
+
+    <div class="summary-container">
+      <div class="summary-box"><strong>총 근무 시간</strong><div id="totalHours">-</div></div>
+      <div class="summary-box"><strong>시급</strong><div id="hourlyWage">10,030원</div></div>
+      <div class="summary-box"><strong>총 급여</strong><div id="totalPay">-</div></div>
+      <div class="summary-box"><strong>소득세 (3%)</strong><div id="incomeTax">-</div></div>
+      <div class="summary-box"><strong>지방세 (0.3%)</strong><div id="localTax">-</div></div>
+      <div class="summary-box"><strong>실지급액</strong><div id="finalPay">-</div></div>
+    </div>
+
+    <div id="calendar-container">
+      <div id="calendar"></div>
+    </div>
+  </div>
+
+  <div class="modal-bg" id="workModal">
+    <div class="modal-content">
+      <span class="close-btn" id="closeModal">&times;</span>
+      <h2>근무 등록</h2>
+      <form id="workForm">
+        <label for="workDate">날짜</label>
+        <input type="date" id="workDate" name="workDate" required />
+        <label for="clockInHour">출근 시간</label>
+        <select id="clockInHour" name="clockInHour"></select> :
+        <select id="clockInMinute" name="clockInMinute"></select>
+        <label for="clockOutHour">퇴근 시간</label>
+        <select id="clockOutHour" name="clockOutHour"></select> :
+        <select id="clockOutMinute" name="clockOutMinute"></select>
+        <button type="submit">등록</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+  <script>
+    const fillSelect = (id, count, step = 1, suffix = '') => {
+      const select = document.getElementById(id);
+      for (let i = 0; i < count; i += step) {
+        const val = i.toString().padStart(2, '0');
+        select.innerHTML += `<option value="${val}">${val}${suffix}</option>`;
+      }
+    };
+
+    document.addEventListener('DOMContentLoaded', function() {
+      fillSelect('clockInHour', 24, 1, '시');
+      fillSelect('clockOutHour', 24, 1, '시');
+      fillSelect('clockInMinute', 60, 5, '분');
+      fillSelect('clockOutMinute', 60, 5, '분');
+
+      const yearSel = document.getElementById('selectYear');
+      const monthSel = document.getElementById('selectMonth');
+      const now = new Date();
+      const thisYear = now.getFullYear();
+
+      for (let y = thisYear - 3; y <= thisYear + 1; y++) {
+        yearSel.innerHTML += `<option value="${y}">${y}년</option>`;
+      }
+      for (let m = 1; m <= 12; m++) {
+        monthSel.innerHTML += `<option value="${m}">${m}월</option>`;
+      }
+
+      yearSel.value = thisYear;
+      monthSel.value = now.getMonth() + 1;
+
+      const modal = document.getElementById('workModal');
+      const openBtn = document.getElementById('workRegisterBtn');
+      const closeBtn = document.getElementById('closeModal');
+      const workForm = document.getElementById('workForm');
+
+      openBtn.onclick = () => {
+        modal.style.display = 'flex';
+        document.getElementById('workDate').value = new Date().toISOString().split('T')[0];
+      };
+      closeBtn.onclick = () => modal.style.display = 'none';
+      window.onclick = e => { if (e.target === modal) modal.style.display = 'none'; };
+
+      workForm.onsubmit = async (e) => {
+        e.preventDefault();
+        const payload = {
+          work_date: workForm.workDate.value,
+          clock_in_hour: workForm.clockInHour.value,
+          clock_in_minute: workForm.clockInMinute.value,
+          clock_out_hour: workForm.clockOutHour.value,
+          clock_out_minute: workForm.clockOutMinute.value,
+        };
+        try {
+          const res = await fetch('/api/worklog', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          if (res.ok) {
+            alert('등록 성공! 승인 후 캘린더에 반영됩니다.');
+            modal.style.display = 'none';
+            calendar.refetchEvents();
+            updateSummary(yearSel.value, monthSel.value);
+          } else {
+            const error = await res.json();
+            alert('등록 실패: ' + (error.error || '알 수 없는 오류'));
+          }
+        } catch (err) {
+          alert('요청 실패: ' + err.message);
+        }
+      };
+
+      const updateSummary = async (year, month) => {
+        try {
+          const res = await fetch(`/api/worklog/summary?year=${year}&month=${month}`);
+          const data = await res.json();
+          document.getElementById('totalHours').innerText = `${data.total_hours}시간`;
+          document.getElementById('hourlyWage').innerText = `${data.hourly_wage.toLocaleString()}원`;
+          document.getElementById('totalPay').innerText = `${data.total_pay.toLocaleString()}원`;
+          document.getElementById('incomeTax').innerText = `${data.income_tax.toLocaleString()}원`;
+          document.getElementById('localTax').innerText = `${data.local_tax.toLocaleString()}원`;
+          document.getElementById('finalPay').innerText = `${data.final_pay.toLocaleString()}원`;
+        } catch (err) {
+          console.error('요약 정보 실패:', err);
+        }
+      };
+
+      document.getElementById('summaryQueryBtn').onclick = () => {
+        updateSummary(yearSel.value, monthSel.value);
+      };
+
+      const calendarEl = document.getElementById('calendar');
+      const calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        locale: 'ko',
+        headerToolbar: {
+          left: 'prev,next today',
+          center: 'title',
+          right: ''
+        },
+        events: '/api/worklog/events',
+        displayEventTime: false,
+        eventContent: function(arg) {
+          // 근무 시간이 title에 들어온다고 가정 (API 구조에 따라 조정 필요)
+          return {
+            html: `<div class="fc-custom-hours">${arg.event.title}</div>`
+          };
+        }
+      });
+      calendar.render();
+
+      updateSummary(thisYear, now.getMonth() + 1);
+    });
+  </script>
+</body>
+</html>

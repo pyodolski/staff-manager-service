@@ -1,0 +1,17 @@
+# Python cache and compiled files
+__pycache__/
+*.pyc
+
+# Flask session and instance folders
+flask_session/
+instance/
+
+# SQLite DB files (if any)
+*.db
+
+# OS files
+.DS_Store
+
+# Environment and secret files (if added later)
+.env
+.env.*
